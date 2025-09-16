@@ -1,0 +1,410 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    overflow: hidden;
+}
+
+/* 標題區域 */
+header {
+    text-align: center;
+    margin-bottom: 25px;
+    padding: 15px 0;
+}
+
+header h1 {
+    font-family: 'Cambria', serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    color: #2c3e50;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+header p {
+    color: #666;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+}
+
+/* 控制面板 - 響應式設計 */
+.control-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    align-items: center;
+    background: #e3f2fd;
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.control-group label {
+    font-weight: bold;
+    color: #1a237e;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    white-space: nowrap;
+}
+
+input[type="number"] {
+    width: 70px;
+    padding: 10px;
+    border: 2px solid #bbdefb;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* 按鈕樣式 */
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    white-space: nowrap;
+    min-width: 100px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4fc3f7, #29b6f6);
+    color: white;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #ff6b6b, #f44336);
+    color: white;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* 矩陣區域 - 響應式設計 */
+.matrix-section {
+    margin-bottom: 20px;
+}
+
+.matrix-section h2 {
+    color: #1a237e;
+    margin-bottom: 15px;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+.matrix-container {
+    background: white;
+    border: 2px solid #bbdefb;
+    border-radius: 10px;
+    padding: 15px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.matrix-grid {
+    display: inline-block;
+    min-width: min-content;
+}
+
+.matrix-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
+}
+
+.matrix-cell {
+    min-width: 60px;
+    flex-shrink: 0;
+}
+
+.matrix-cell input {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e3f2fd;
+    border-radius: 6px;
+    text-align: center;
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+    background: #fafafa;
+}
+
+.matrix-cell input:focus {
+    outline: none;
+    border-color: #4fc3f7;
+    background: white;
+}
+
+.matrix-separator {
+    font-weight: bold;
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: #1a237e;
+    margin: 0 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.matrix-header {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 10px;
+    color: #1a237e;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+}
+
+/* 按鈕組 - 響應式設計 */
+.button-group {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 25px 0;
+    flex-wrap: wrap;
+}
+
+.button-group .btn {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+/* 結果區域 - 響應式設計 */
+.result-section {
+    margin-bottom: 20px;
+}
+
+.result-section h2 {
+    color: #1a237e;
+    margin-bottom: 15px;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+.result-container {
+    background: #fffff0;
+    border: 2px solid #bbdefb;
+    border-radius: 10px;
+    padding: 18px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: clamp(0.8rem, 2vw, 0.9rem);
+    line-height: 1.5;
+}
+
+#resultOutput {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* 手機設備專用樣式 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .container {
+        padding: 15px;
+        border-radius: 10px;
+    }
+
+    .control-panel {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .control-group {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    input[type="number"] {
+        width: 60px;
+        padding: 8px;
+    }
+
+    .matrix-container {
+        padding: 10px;
+    }
+
+    .matrix-cell {
+        min-width: 50px;
+    }
+
+    .matrix-cell input {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+
+    .matrix-separator {
+        margin: 0 5px;
+        font-size: 1rem;
+    }
+
+    .button-group {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .button-group .btn {
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .result-container {
+        padding: 15px;
+        max-height: 300px;
+        font-size: 0.8rem;
+    }
+}
+
+/* 超小屏幕設備 */
+@media (max-width: 480px) {
+    .matrix-cell {
+        min-width: 45px;
+    }
+
+    .matrix-cell input {
+        padding: 6px;
+        font-size: 0.75rem;
+    }
+
+    .matrix-separator {
+        margin: 0 3px;
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 10px 15px;
+        font-size: 0.85rem;
+    }
+
+    .result-container {
+        padding: 12px;
+        font-size: 0.75rem;
+    }
+}
+
+/* 平板設備 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .container {
+        padding: 25px;
+    }
+
+    .control-panel {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .matrix-cell {
+        min-width: 55px;
+    }
+}
+
+/* 大屏幕設備 */
+@media (min-width: 1025px) {
+    .container {
+        padding: 30px;
+    }
+
+    .control-panel {
+        grid-template-columns: repeat(4, auto);
+        justify-content: start;
+    }
+
+    .matrix-cell {
+        min-width: 70px;
+    }
+}
+
+/* 觸摸設備優化 */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        padding: 14px 20px;
+        min-height: 44px; /* 最小觸摸目標尺寸 */
+    }
+
+    .matrix-cell input {
+        min-height: 40px;
+        padding: 12px;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+    }
+
+    .container {
+        background: #2c3e50;
+        color: #ecf0f1;
+    }
+
+    .matrix-cell input {
+        background: #34495e;
+        color: #ecf0f1;
+        border-color: #4fc3f7;
+    }
+
+    .result-container {
+        background: #2c3e50;
+        color: #ecf0f1;
+        border-color: #4fc3f7;
+    }
+}
+
+/* 滾動條樣式 */
+.result-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.result-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.result-container::-webkit-scrollbar-thumb {
+    background: #bbdefb;
+    border-radius: 4px;
+}
+
+.result-container::-webkit-scrollbar-thumb:hover {
+    background: #4fc3f7;
+}
+
+/* 焦點狀態 */
+.btn:focus,
+input:focus {
+    outline: 2px solid #4fc3f7;
+    outline-offset: 2px;
+}
+
+/* 禁用狀態 */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}

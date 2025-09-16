@@ -1,0 +1,55 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#4fc3f7">
+    <title>高斯-約旦消去法計算器</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cambria&family=Consolas&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" href="icon.png">
+    <!-- 載入 math.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>𝓖𝓪𝓾𝓼𝓼-𝓙𝓸𝓻𝓭𝓪𝓷 𝓔𝓵𝓲𝓶𝓲𝓷𝓪𝓽𝓲𝓸𝓷</h1>
+            <p>高斯-約旦消去法線上計算工具</p>
+        </header>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="matrixSize">矩陣維度:</label>
+                <input type="number" id="matrixSize" min="2" max="6" value="4">
+            </div>
+            <div class="control-group">
+                <label>
+                    <input type="checkbox" id="useFractions" checked>
+                    使用分數計算
+                </label>
+            </div>
+            <button id="updateMatrix" class="btn">更新矩陣</button>
+            <button id="fillExample" class="btn">填入範例</button>
+        </div>
+
+        <div class="matrix-section">
+            <h2>增廣矩陣 [A | b]</h2>
+            <div id="matrixContainer" class="matrix-container"></div>
+        </div>
+
+        <div class="button-group">
+            <button id="calculate" class="btn btn-primary">🧮 計算</button>
+            <button id="clear" class="btn btn-secondary">🗑️ 清除</button>
+        </div>
+
+        <div class="result-section">
+            <h2>計算過程與結果</h2>
+            <div class="result-container">
+                <pre id="resultOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
