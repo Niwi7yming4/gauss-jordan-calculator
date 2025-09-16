@@ -8,7 +8,7 @@ body {
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, #f0f8ff 0%, #e3f2fd 100%);
     min-height: 100vh;
-    padding: 15px;
+    padding: 10px;
 }
 
 .container {
@@ -17,11 +17,209 @@ body {
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 15px;
     overflow: hidden;
 }
 
-/* 標題區域 */
+/* 手機設備專用樣式 - 增強版 */
+@media (max-width: 768px) {
+    body {
+        padding: 8px;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    .container {
+        padding: 12px;
+        border-radius: 8px;
+    }
+
+    /* 控制面板優化 */
+    .control-panel {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 12px;
+        margin-bottom: 15px;
+    }
+
+    .control-group {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+    }
+
+    .control-group label {
+        text-align: center;
+        white-space: normal;
+    }
+
+    input[type="number"] {
+        width: 100%;
+        max-width: 80px;
+        margin: 0 auto;
+        padding: 8px;
+        font-size: 16px; /* 防止iOS縮放 */
+    }
+
+    /* 矩陣輸入框優化 */
+    .matrix-container {
+        padding: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .matrix-grid {
+        min-width: auto;
+        width: 100%;
+    }
+
+    .matrix-row {
+        gap: 4px;
+        margin-bottom: 6px;
+        justify-content: center;
+        flex-wrap: nowrap;
+        min-width: min-content;
+    }
+
+    .matrix-cell {
+        min-width: 40px !important; /* 強制更小的寬度 */
+        max-width: 50px;
+        flex: 0 0 auto;
+    }
+
+    .matrix-cell input {
+        width: 100%;
+        padding: 8px 4px;
+        font-size: 14px;
+        min-height: 35px;
+        text-align: center;
+    }
+
+    .matrix-separator {
+        margin: 0 3px;
+        font-size: 14px;
+        min-width: 15px;
+        line-height: 35px; /* 與輸入框高度對齊 */
+    }
+
+    /* 按鈕優化 */
+    .button-group {
+        flex-direction: column;
+        gap: 8px;
+        margin: 20px 0;
+    }
+
+    .button-group .btn {
+        width: 100%;
+        max-width: none;
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .btn {
+        padding: 12px 16px;
+        min-height: 44px; /* 符合觸摸目標指南 */
+    }
+
+    /* 結果區域優化 */
+    .result-container {
+        padding: 12px;
+        max-height: 300px;
+        font-size: 14px;
+    }
+}
+
+/* 超小屏幕設備（手機橫屏或小手機） */
+@media (max-width: 480px) {
+    .matrix-cell {
+        min-width: 35px !important;
+        max-width: 40px;
+    }
+
+    .matrix-cell input {
+        padding: 6px 3px;
+        font-size: 13px;
+        min-height: 32px;
+    }
+
+    .matrix-separator {
+        margin: 0 2px;
+        font-size: 13px;
+        min-width: 12px;
+        line-height: 32px;
+    }
+
+    .matrix-row {
+        gap: 3px;
+    }
+
+    input[type="number"] {
+        max-width: 70px;
+        padding: 6px;
+    }
+
+    .control-panel {
+        padding: 10px;
+    }
+}
+
+/* 針對非常小的屏幕 */
+@media (max-width: 360px) {
+    .matrix-cell {
+        min-width: 32px !important;
+        max-width: 36px;
+    }
+
+    .matrix-cell input {
+        padding: 5px 2px;
+        font-size: 12px;
+        min-height: 30px;
+    }
+
+    .matrix-separator {
+        font-size: 12px;
+        min-width: 10px;
+        line-height: 30px;
+    }
+}
+
+/* 橫屏模式優化 */
+@media (max-width: 768px) and (orientation: landscape) {
+    .control-panel {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .matrix-cell {
+        min-width: 45px !important;
+    }
+    
+    .matrix-cell input {
+        min-height: 38px;
+    }
+}
+
+/* 防止輸入框縮放 */
+@media (max-width: 768px) {
+    input[type="number"],
+    .matrix-cell input {
+        font-size: 16px; /* 防止iOS自動縮放 */
+        transform: scale(0.95);
+        transform-origin: center;
+    }
+}
+
+/* 觸摸設備優化 */
+@media (hover: none) and (pointer: coarse) {
+    .matrix-cell input {
+        min-height: 44px; /* 更大的觸摸目標 */
+        padding: 12px 6px;
+    }
+    
+    .btn {
+        padding: 16px 20px;
+    }
+}
+
+/* 保持原有的其他樣式不變 */
 header {
     text-align: center;
     margin-bottom: 25px;
