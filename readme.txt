@@ -18,7 +18,7 @@
 ## 🚀 線上訪問
 
 直接訪問 GitHub Pages 部署的網站：  
-[https://your-username.github.io/gauss-jordan-calculator](https://your-username.github.io/gauss-jordan-calculator)
+[https://Niwi7yming4.github.io/gauss-jordan-calculator](https://Niwi7yming4.github.io/gauss-jordan-calculator)
 
 ---
 
