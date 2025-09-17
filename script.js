@@ -196,12 +196,20 @@ class GaussJordanCalculator {
         let pivot_r = 0;
 
         for (let c = 0; c < n && pivot_r < n; c++) {
-            // 找 pivot row
-            let pivotRowIdx = pivot_r;
-            for (let k = pivot_r + 1; k < n; k++) {
-                if (this.absLarger(A[k][c], A[pivotRowIdx][c])) pivotRowIdx = k;
+            // 找 pivot row (找該列絕對值最大的行)
+            let pivotRowIdx = -1;
+            let maxVal = this.useFractions ? math.fraction(0) : 0;
+            for (let k = pivot_r; k < n; k++) {
+                const absVal = math.abs(A[k][c]);
+                if (this.absLarger(absVal, maxVal)) {
+                    maxVal = absVal;
+                    pivotRowIdx = k;
+                }
             }
-            if (this.isZero(A[pivotRowIdx][c])) continue;
+            
+            if (pivotRowIdx === -1 || this.isZero(maxVal)) continue;
+            
+            // 交換行
             if (pivotRowIdx !== pivot_r) {
                 [A[pivot_r], A[pivotRowIdx]] = [A[pivotRowIdx], A[pivot_r]];
                 steps.push({ description: `交換 R${pivot_r+1} ↔ R${pivotRowIdx+1}`, matrix: this.cloneForStep(A) });
@@ -209,21 +217,11 @@ class GaussJordanCalculator {
 
             pivotColOfRow[pivot_r] = c;
 
-            // 整數化 pivot row (只在分數模式下)
-            if (this.useFractions) {
-                const denominators = A[pivot_r].map(v => v.d ? v.d : 1);
-                const lcm = denominators.reduce((a,b) => math.lcm(a,b), 1);
-                if (lcm > 1) {
-                    for (let j = 0; j < m; j++) A[pivot_r][j] = math.multiply(A[pivot_r][j], lcm);
-                    steps.push({ description: `R${pivot_r+1} × ${lcm} (清除分母)`, matrix: this.cloneForStep(A) });
-                }
-            }
-
             // 使 pivot = 1
             const pivot = A[pivot_r][c];
             if (!this.isZero(pivot) && !math.equal(pivot, 1)) {
                 for (let j = c; j < m; j++) {
-                    A[pivot_r][j] = this.useFractions ? math.divide(A[pivot_r][j], pivot) : A[pivot_r][j]/pivot;
+                    A[pivot_r][j] = this.useFractions ? math.divide(A[pivot_r][j], pivot) : A[pivot_r][j] / pivot;
                 }
                 steps.push({ description: `R${pivot_r+1} ÷ ${this.formatValue(pivot)}`, matrix: this.cloneForStep(A) });
             }
@@ -234,16 +232,22 @@ class GaussJordanCalculator {
                 const factor = A[i][c];
                 if (this.isZero(factor)) continue;
                 
+                // 記錄原始值用於顯示
+                const originalRow = [...A[i]];
+                
                 for (let j = c; j < m; j++) {
+                    const subtractValue = this.useFractions 
+                        ? math.multiply(factor, A[pivot_r][j])
+                        : factor * A[pivot_r][j];
                     A[i][j] = this.useFractions 
-                        ? math.subtract(A[i][j], math.multiply(factor, A[pivot_r][j]))
-                        : A[i][j] - factor * A[pivot_r][j];
+                        ? math.subtract(A[i][j], subtractValue)
+                        : A[i][j] - subtractValue;
                 }
                 
-                // 只在數值有實際變化時記錄步驟
+                // 檢查是否有實際變化
                 let hasChange = false;
-                for (let j = c; j < m; j++) {
-                    if (!this.isZero(A[i][j])) {
+                for (let j = 0; j < m; j++) {
+                    if (!math.equal(A[i][j], originalRow[j])) {
                         hasChange = true;
                         break;
                     }
@@ -262,56 +266,82 @@ class GaussJordanCalculator {
 
         // 檢查是否有矛盾方程式
         for (let i = pivot_r; i < n; i++) {
-            if (!this.isZero(A[i][m-1])) {
+            // 檢查左邊是否全為0但右邊不為0
+            let allZero = true;
+            for (let j = 0; j < n; j++) {
+                if (!this.isZero(A[i][j])) {
+                    allZero = false;
+                    break;
+                }
+            }
+            if (allZero && !this.isZero(A[i][m-1])) {
                 return { steps, solution: null, message: '無解：存在矛盾方程式' };
             }
         }
 
-        // 無限多組解處理
+        // 檢查秩
         if (pivot_r < n) {
-            const freeVarCols = [], pivotCols = [];
-            for (let i = 0; i < pivot_r; i++) pivotCols.push(pivotColOfRow[i]);
+            // 無限多組解處理
+            const freeVarCols = [];
+            const pivotCols = [];
+            for (let i = 0; i < pivot_r; i++) {
+                if (pivotColOfRow[i] !== -1) pivotCols.push(pivotColOfRow[i]);
+            }
+            
             for (let j = 0; j < n; j++) {
                 if (!pivotCols.includes(j)) freeVarCols.push(j);
             }
 
             const particularSolution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
             for (let i = 0; i < pivot_r; i++) {
-                particularSolution[pivotColOfRow[i]] = A[i][m-1];
+                if (pivotColOfRow[i] !== -1) {
+                    particularSolution[pivotColOfRow[i]] = A[i][m-1];
+                }
             }
 
-            const paramNames = freeVarCols.map((_, idx) => `t${idx+1}`);
-            const paramSolution = {};
-            freeVarCols.forEach((col, idx) => {
-                paramSolution[`x${col+1}`] = paramNames[idx];
-            });
-
-            for (let i = 0; i < pivot_r; i++) {
-                const p_col = pivotColOfRow[i];
-                let expr = this.formatValue(A[i][m-1]);
+            // 如果有自由變數，建立參數化解
+            if (freeVarCols.length > 0) {
+                const paramNames = freeVarCols.map((_, idx) => `t${idx+1}`);
+                const paramSolution = {};
                 
-                for (let k = 0; k < freeVarCols.length; k++) {
-                    const f_col = freeVarCols[k];
-                    const coeff = A[i][f_col];
-                    if (!this.isZero(coeff)) {
-                        const coeffStr = this.formatValue(math.unaryMinus(coeff));
-                        if (coeffStr.startsWith('-')) {
-                            expr += ` + ${coeffStr.slice(1)}${paramNames[k]}`;
-                        } else {
-                            expr += ` - ${coeffStr}${paramNames[k]}`;
+                // 自由變數直接設為參數
+                freeVarCols.forEach((col, idx) => {
+                    paramSolution[`x${col+1}`] = paramNames[idx];
+                });
+
+                // 計算基本變數的表達式
+                for (let i = 0; i < pivot_r; i++) {
+                    if (pivotColOfRow[i] !== -1) {
+                        const p_col = pivotColOfRow[i];
+                        let expr = this.formatValue(A[i][m-1]);
+                        
+                        for (let k = 0; k < freeVarCols.length; k++) {
+                            const f_col = freeVarCols[k];
+                            const coeff = A[i][f_col];
+                            if (!this.isZero(coeff)) {
+                                const negativeCoeff = this.useFractions ? math.unaryMinus(coeff) : -coeff;
+                                const coeffStr = this.formatValue(negativeCoeff);
+                                if (coeffStr.startsWith('-')) {
+                                    expr += ` + ${coeffStr.slice(1)}${paramNames[k]}`;
+                                } else {
+                                    expr += ` - ${coeffStr}${paramNames[k]}`;
+                                }
+                            }
                         }
+                        paramSolution[`x${p_col+1}`] = expr;
                     }
                 }
-                paramSolution[`x${p_col+1}`] = expr;
-            }
 
-            return { steps, paramSolution, particularSolution, message: '無限多組解' };
+                return { steps, paramSolution, particularSolution, message: '無限多組解' };
+            }
         }
 
         // 唯一解
         const solution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
         for (let i = 0; i < n; i++) {
-            solution[pivotColOfRow[i]] = A[i][m-1];
+            if (pivotColOfRow[i] !== -1) {
+                solution[pivotColOfRow[i]] = A[i][m-1];
+            }
         }
         return { steps, solution, message: '唯一解' };
     }
@@ -322,8 +352,17 @@ class GaussJordanCalculator {
         for (let i = 0; i < n; i++) {
             let lhs = this.useFractions ? math.fraction(0) : 0;
             for (let j = 0; j < n; j++) {
-                const coeff = origAugmented[i][j], solj = solution[j];
-                const prod = this.useFractions && typeof solj !== 'string' ? math.multiply(coeff, solj) : (typeof solj === 'string' ? 0 : coeff*solj);
+                const coeff = origAugmented[i][j];
+                const solj = solution[j];
+                let prod;
+                if (this.useFractions && typeof solj !== 'string') {
+                    prod = math.multiply(coeff, solj);
+                } else if (typeof solj === 'string') {
+                    // 如果是參數化解，跳過驗證
+                    prod = 0;
+                } else {
+                    prod = coeff * solj;
+                }
                 lhs = this.useFractions ? math.add(lhs, prod) : lhs + prod;
             }
             const rhs = origAugmented[i][n];
@@ -352,20 +391,29 @@ class GaussJordanCalculator {
         }
         text += '✅ 最終結果:\n' + '─'.repeat(40) + '\n';
         text += `ℹ️ ${result.message}\n`;
+        
         if (result.solution) {
-            for (let i = 0; i < result.solution.length; i++)
+            for (let i = 0; i < result.solution.length; i++) {
                 text += `x${i+1} = ${this.formatValue(result.solution[i])}\n`;
+            }
         } else if (result.particularSolution) {
             text += '\n代入自由變數為 0，可得特解：\n';
-            for (let i = 0; i < result.particularSolution.length; i++)
+            for (let i = 0; i < result.particularSolution.length; i++) {
                 text += `x${i+1} = ${this.formatValue(result.particularSolution[i])}\n`;
+            }
 
-            text += '\n完整參數化解：\n';
-            const keys = Object.keys(result.paramSolution).sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1)));
-            for(const k of keys) text += `${k} = ${result.paramSolution[k]}\n`;
-            text += '(t1, t2…為任意實數)\n';
+            if (result.paramSolution) {
+                text += '\n完整參數化解：\n';
+                const keys = Object.keys(result.paramSolution).sort((a,b)=>parseInt(a.slice(1))-parseInt(b.slice(1)));
+                for(const k of keys) text += `${k} = ${result.paramSolution[k]}\n`;
+                text += '(t1, t2…為任意實數)\n';
+            }
         }
-        text += result.verified ? '\n(✓ 解已驗證)\n' : '\n(❌ 解驗證失敗)\n';
+        
+        if (result.verified !== undefined) {
+            text += result.verified ? '\n(✓ 解已驗證)\n' : '\n(❌ 解驗證失敗)\n';
+        }
+        
         text += '═'.repeat(70) + '\n𝓢𝓸𝓵𝓾𝓽𝓲𝓸𝓷 𝓒𝓸𝓶𝓹𝓵𝓮𝓽𝓮 🎯\n';
         output.textContent = text;
     }
