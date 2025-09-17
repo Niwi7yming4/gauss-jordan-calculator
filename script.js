@@ -186,7 +186,7 @@ class GaussJordanCalculator {
         }
     }
 
-    // ===================== 高斯-約旦消去法核心 =====================
+    // ===================== 修正後的高斯-約旦消去法核心 =====================
     async gaussJordanElimination(matrix) {
         const n = matrix.length;
         const m = matrix[0].length;
@@ -202,66 +202,104 @@ class GaussJordanCalculator {
                 if (this.absLarger(A[k][c], A[pivotRowIdx][c])) pivotRowIdx = k;
             }
             if (this.isZero(A[pivotRowIdx][c])) continue;
-            if (pivotRowIdx !== pivot_r) [A[pivot_r], A[pivotRowIdx]] = [A[pivotRowIdx], A[pivot_r]];
+            if (pivotRowIdx !== pivot_r) {
+                [A[pivot_r], A[pivotRowIdx]] = [A[pivotRowIdx], A[pivot_r]];
+                steps.push({ description: `交換 R${pivot_r+1} ↔ R${pivotRowIdx+1}`, matrix: this.cloneForStep(A) });
+            }
 
             pivotColOfRow[pivot_r] = c;
 
-            // 整數化 pivot row
+            // 整數化 pivot row (只在分數模式下)
             if (this.useFractions) {
                 const denominators = A[pivot_r].map(v => v.d ? v.d : 1);
                 const lcm = denominators.reduce((a,b) => math.lcm(a,b), 1);
-                for (let j = 0; j < m; j++) A[pivot_r][j] = math.multiply(A[pivot_r][j], lcm);
+                if (lcm > 1) {
+                    for (let j = 0; j < m; j++) A[pivot_r][j] = math.multiply(A[pivot_r][j], lcm);
+                    steps.push({ description: `R${pivot_r+1} × ${lcm} (清除分母)`, matrix: this.cloneForStep(A) });
+                }
             }
 
             // 使 pivot = 1
             const pivot = A[pivot_r][c];
-            for (let j = c; j < m; j++) {
-                A[pivot_r][j] = this.useFractions ? math.divide(A[pivot_r][j], pivot) : A[pivot_r][j]/pivot;
+            if (!this.isZero(pivot) && !math.equal(pivot, 1)) {
+                for (let j = c; j < m; j++) {
+                    A[pivot_r][j] = this.useFractions ? math.divide(A[pivot_r][j], pivot) : A[pivot_r][j]/pivot;
+                }
+                steps.push({ description: `R${pivot_r+1} ÷ ${this.formatValue(pivot)}`, matrix: this.cloneForStep(A) });
             }
-            steps.push({ description: `R${pivot_r+1} ÷ ${this.formatValue(pivot)}`, matrix: this.cloneForStep(A) });
 
             // 消去其它行
             for (let i = 0; i < n; i++) {
                 if (i === pivot_r) continue;
                 const factor = A[i][c];
                 if (this.isZero(factor)) continue;
+                
                 for (let j = c; j < m; j++) {
                     A[i][j] = this.useFractions 
                         ? math.subtract(A[i][j], math.multiply(factor, A[pivot_r][j]))
-                        : A[i][j] - factor*A[pivot_r][j];
+                        : A[i][j] - factor * A[pivot_r][j];
                 }
-                steps.push({ description: `R${i+1} - (${this.formatValue(factor)}) × R${pivot_r+1}`, matrix: this.cloneForStep(A) });
+                
+                // 只在數值有實際變化時記錄步驟
+                let hasChange = false;
+                for (let j = c; j < m; j++) {
+                    if (!this.isZero(A[i][j])) {
+                        hasChange = true;
+                        break;
+                    }
+                }
+                
+                if (hasChange) {
+                    steps.push({ 
+                        description: `R${i+1} - (${this.formatValue(factor)}) × R${pivot_r+1}`, 
+                        matrix: this.cloneForStep(A) 
+                    });
+                }
             }
 
             pivot_r++;
         }
 
-        const rank = pivot_r;
-        for (let i = rank; i < n; i++) {
-            if (!this.isZero(A[i][m-1])) return { steps, solution: null, message: '無解：存在矛盾方程式' };
+        // 檢查是否有矛盾方程式
+        for (let i = pivot_r; i < n; i++) {
+            if (!this.isZero(A[i][m-1])) {
+                return { steps, solution: null, message: '無解：存在矛盾方程式' };
+            }
         }
 
         // 無限多組解處理
-        if (rank < n) {
-            const freeVarCols = [], pivotCols = pivotColOfRow.slice(0, rank);
-            for(let j=0; j<n; j++) if(!pivotCols.includes(j)) freeVarCols.push(j);
+        if (pivot_r < n) {
+            const freeVarCols = [], pivotCols = [];
+            for (let i = 0; i < pivot_r; i++) pivotCols.push(pivotColOfRow[i]);
+            for (let j = 0; j < n; j++) {
+                if (!pivotCols.includes(j)) freeVarCols.push(j);
+            }
 
             const particularSolution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
-            for (let i = 0; i < rank; i++) particularSolution[pivotColOfRow[i]] = A[i][m-1];
+            for (let i = 0; i < pivot_r; i++) {
+                particularSolution[pivotColOfRow[i]] = A[i][m-1];
+            }
 
             const paramNames = freeVarCols.map((_, idx) => `t${idx+1}`);
             const paramSolution = {};
-            freeVarCols.forEach((col, idx) => paramSolution[`x${col+1}`] = paramNames[idx]);
+            freeVarCols.forEach((col, idx) => {
+                paramSolution[`x${col+1}`] = paramNames[idx];
+            });
 
-            for (let i = 0; i < rank; i++) {
+            for (let i = 0; i < pivot_r; i++) {
                 const p_col = pivotColOfRow[i];
                 let expr = this.formatValue(A[i][m-1]);
+                
                 for (let k = 0; k < freeVarCols.length; k++) {
                     const f_col = freeVarCols[k];
                     const coeff = A[i][f_col];
                     if (!this.isZero(coeff)) {
-                        const coeffStr = this.formatValue(coeff);
-                        expr += coeffStr.startsWith('-') ? ` - ${coeffStr.slice(1)}*${paramNames[k]}` : ` + ${coeffStr}*${paramNames[k]}`;
+                        const coeffStr = this.formatValue(math.unaryMinus(coeff));
+                        if (coeffStr.startsWith('-')) {
+                            expr += ` + ${coeffStr.slice(1)}${paramNames[k]}`;
+                        } else {
+                            expr += ` - ${coeffStr}${paramNames[k]}`;
+                        }
                     }
                 }
                 paramSolution[`x${p_col+1}`] = expr;
@@ -272,7 +310,9 @@ class GaussJordanCalculator {
 
         // 唯一解
         const solution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
-        for (let i = 0; i < n; i++) solution[pivotColOfRow[i]] = A[i][m-1];
+        for (let i = 0; i < n; i++) {
+            solution[pivotColOfRow[i]] = A[i][m-1];
+        }
         return { steps, solution, message: '唯一解' };
     }
 
