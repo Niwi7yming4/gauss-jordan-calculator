@@ -192,22 +192,28 @@ class GaussJordanCalculator {
         const m = matrix[0].length;
         let A = this.cloneForStep(matrix);
         const steps = [{ description: '初始矩陣', matrix: this.cloneForStep(A) }];
-        const pivotColOfRow = new Array(n).fill(-1);
+        const pivotColOfRow = new Array(n).fill(-1); // 記錄每個主元所在的列索引
         let pivot_r = 0;
 
         for (let c = 0; c < n && pivot_r < n; c++) {
-            // 找 pivot row (找該列絕對值最大的行)
+            // 找 pivot row - 修正後的邏輯
             let pivotRowIdx = -1;
-            let maxVal = this.useFractions ? math.fraction(0) : 0;
+            let maxAbsVal = this.useFractions ? math.fraction(0) : 0;
+            
+            // 從當前 pivot_r 行開始往下找
             for (let k = pivot_r; k < n; k++) {
-                const absVal = math.abs(A[k][c]);
-                if (this.absLarger(absVal, maxVal)) {
-                    maxVal = absVal;
+                const currentAbsVal = math.abs(A[k][c]);
+                // 只考慮非零值，並且找絕對值最大的
+                if (!this.isZero(A[k][c]) && this.absLarger(currentAbsVal, maxAbsVal)) {
+                    maxAbsVal = currentAbsVal;
                     pivotRowIdx = k;
                 }
             }
             
-            if (pivotRowIdx === -1 || this.isZero(maxVal)) continue;
+            // 如果找不到非零的pivot，跳過這一列
+            if (pivotRowIdx === -1) {
+                continue;
+            }
             
             // 交換行
             if (pivotRowIdx !== pivot_r) {
@@ -279,66 +285,70 @@ class GaussJordanCalculator {
             }
         }
 
-        // 檢查秩
-        if (pivot_r < n) {
-            // 無限多組解處理
-            const freeVarCols = [];
-            const pivotCols = [];
-            for (let i = 0; i < pivot_r; i++) {
-                if (pivotColOfRow[i] !== -1) pivotCols.push(pivotColOfRow[i]);
+        // ===================== 關鍵修正：使用 pivotColOfRow 來判斷解 =====================
+        const pivotCols = [];
+        for (let i = 0; i < pivot_r; i++) {
+            if (pivotColOfRow[i] !== -1) {
+                pivotCols.push(pivotColOfRow[i]);
             }
-            
-            for (let j = 0; j < n; j++) {
-                if (!pivotCols.includes(j)) freeVarCols.push(j);
-            }
+        }
 
+        // 找出自由變數列
+        const freeVarCols = [];
+        for (let j = 0; j < n; j++) {
+            if (!pivotCols.includes(j)) {
+                freeVarCols.push(j);
+            }
+        }
+
+        // 無限多組解處理
+        if (freeVarCols.length > 0) {
             const particularSolution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
+            
+            // 設置特解：基本變數取對應的常數項，自由變數設為0
             for (let i = 0; i < pivot_r; i++) {
                 if (pivotColOfRow[i] !== -1) {
                     particularSolution[pivotColOfRow[i]] = A[i][m-1];
                 }
             }
 
-            // 如果有自由變數，建立參數化解
-            if (freeVarCols.length > 0) {
-                const paramNames = freeVarCols.map((_, idx) => `t${idx+1}`);
-                const paramSolution = {};
-                
-                // 自由變數直接設為參數
-                freeVarCols.forEach((col, idx) => {
-                    paramSolution[`x${col+1}`] = paramNames[idx];
-                });
+            const paramNames = freeVarCols.map((_, idx) => `t${idx+1}`);
+            const paramSolution = {};
+            
+            // 自由變數直接設為參數
+            freeVarCols.forEach((col, idx) => {
+                paramSolution[`x${col+1}`] = paramNames[idx];
+            });
 
-                // 計算基本變數的表達式
-                for (let i = 0; i < pivot_r; i++) {
-                    if (pivotColOfRow[i] !== -1) {
-                        const p_col = pivotColOfRow[i];
-                        let expr = this.formatValue(A[i][m-1]);
-                        
-                        for (let k = 0; k < freeVarCols.length; k++) {
-                            const f_col = freeVarCols[k];
-                            const coeff = A[i][f_col];
-                            if (!this.isZero(coeff)) {
-                                const negativeCoeff = this.useFractions ? math.unaryMinus(coeff) : -coeff;
-                                const coeffStr = this.formatValue(negativeCoeff);
-                                if (coeffStr.startsWith('-')) {
-                                    expr += ` + ${coeffStr.slice(1)}${paramNames[k]}`;
-                                } else {
-                                    expr += ` - ${coeffStr}${paramNames[k]}`;
-                                }
+            // 計算基本變數的表達式
+            for (let i = 0; i < pivot_r; i++) {
+                if (pivotColOfRow[i] !== -1) {
+                    const p_col = pivotColOfRow[i];
+                    let expr = this.formatValue(A[i][m-1]);
+                    
+                    for (let k = 0; k < freeVarCols.length; k++) {
+                        const f_col = freeVarCols[k];
+                        const coeff = A[i][f_col];
+                        if (!this.isZero(coeff)) {
+                            const negativeCoeff = this.useFractions ? math.unaryMinus(coeff) : -coeff;
+                            const coeffStr = this.formatValue(negativeCoeff);
+                            if (coeffStr.startsWith('-')) {
+                                expr += ` + ${coeffStr.slice(1)}${paramNames[k]}`;
+                            } else {
+                                expr += ` - ${coeffStr}${paramNames[k]}`;
                             }
                         }
-                        paramSolution[`x${p_col+1}`] = expr;
                     }
+                    paramSolution[`x${p_col+1}`] = expr;
                 }
-
-                return { steps, paramSolution, particularSolution, message: '無限多組解' };
             }
+
+            return { steps, paramSolution, particularSolution, message: '無限多組解' };
         }
 
         // 唯一解
         const solution = new Array(n).fill(this.useFractions ? math.fraction(0) : 0);
-        for (let i = 0; i < n; i++) {
+        for (let i = 0; i < pivot_r; i++) {
             if (pivotColOfRow[i] !== -1) {
                 solution[pivotColOfRow[i]] = A[i][m-1];
             }
